@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last-Mile Delivery Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2 rounded-lg text-white">
+                    <i data-lucide="truck" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Last-Mile Delivery Tracker</h1>
+                    <p class="text-xs text-slate-400">Logistics & Smart Dispatch Platform</p>
+                </div>
+            </div>
+
+            <!-- Quick Demo Role Switcher -->
+            <div class="flex items-center gap-2 bg-slate-800 p-1.5 rounded-xl border border-slate-700">
+                <span class="text-xs text-slate-400 font-medium px-2">Demo Login:</span>
+                <button onclick="quickLogin('admin@delivery.com', 'Admin@123')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 transition">
+                    Admin
+                </button>
+                <button onclick="quickLogin('customer@example.com', 'Customer@123')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition">
+                    Customer
+                </button>
+                <button onclick="quickLogin('agent1@delivery.com', 'Agent@123')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition">
+                    Agent
+                </button>
+            </div>
+
+            <!-- User Auth Profile Info -->
+            <div id="authProfile" class="flex items-center space-x-3">
+                <span id="userInfo" class="text-sm text-slate-300">Not Logged In</span>
+                <button id="logoutBtn" onclick="logout()" class="hidden px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation Bar -->
+    <nav class="bg-white border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 flex space-x-1 overflow-x-auto">
+            <button onclick="switchTab('orders')" id="tab-orders" class="tab-btn active px-4 py-3 text-sm font-medium border-b-2 border-blue-600 text-blue-600 flex items-center gap-2">
+                <i data-lucide="package" class="w-4 h-4"></i> Orders & Tracking
+            </button>
+            <button onclick="switchTab('create')" id="tab-create" class="tab-btn px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2">
+                <i data-lucide="calculator" class="w-4 h-4"></i> Create Order / Price Estimator
+            </button>
+            <button onclick="switchTab('agents')" id="tab-agents" class="tab-btn px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4"></i> Delivery Agents Hub
+            </button>
+            <button onclick="switchTab('admin')" id="tab-admin" class="tab-btn admin-only hidden px-4 py-3 text-sm font-medium text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2">
+                <i data-lucide="settings" class="w-4 h-4"></i> Admin Configuration & Logs
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Body Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+
+        <!-- Notification Toast Container -->
+        <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md"></div>
+
+        <!-- ================= TAB 1: ORDERS & TRACKING ================= -->
+        <section id="content-orders" class="tab-content">
+            <!-- Filter Bar -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-3 flex-1">
+                    <div class="relative flex-1 min-w-[200px]">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="filterSearch" placeholder="Search tracking #, address..." onkeyup="loadOrders()" class="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <select id="filterStatus" onchange="loadOrders()" class="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Statuses</option>
+                        <option value="CREATED">CREATED</option>
+                        <option value="ASSIGNED">ASSIGNED</option>
+                        <option value="PICKED_UP">PICKED_UP</option>
+                        <option value="IN_TRANSIT">IN_TRANSIT</option>
+                        <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+                        <option value="DELIVERED">DELIVERED</option>
+                        <option value="FAILED">FAILED (Delivery Failed)</option>
+                        <option value="RESCHEDULED">RESCHEDULED</option>
+                    </select>
+                    <select id="filterZone" onchange="loadOrders()" class="px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Zones</option>
+                    </select>
+                </div>
+                <button onclick="loadOrders()" class="px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg flex items-center gap-1 transition">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh
+                </button>
+            </div>
+
+            <!-- Orders Table / List -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 uppercase text-xs">
+                            <tr>
+                                <th class="p-3.5">Tracking #</th>
+                                <th class="p-3.5">Type & Payment</th>
+                                <th class="p-3.5">Pickup ➔ Drop</th>
+                                <th class="p-3.5">Billable Wt.</th>
+                                <th class="p-3.5">Total Charge</th>
+                                <th class="p-3.5">Agent</th>
+                                <th class="p-3.5">Status</th>
+                                <th class="p-3.5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody" class="divide-y divide-slate-100">
+                            <tr>
+                                <td colspan="8" class="p-8 text-center text-slate-400">Loading orders...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= TAB 2: CREATE ORDER / PRICE CALCULATOR ================= -->
+        <section id="content-create" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Left Column: Order Input Form -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+                        <i data-lucide="package-plus" class="w-5 h-5 text-blue-600"></i> New Order & Shipping Calculator
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-6">Enter package dimensions, weight, and locations. Charges update automatically.</p>
+
+                    <form id="orderForm" onsubmit="handleCreateOrder(event)" class="space-y-5">
+                        
+                        <!-- Admin Customer Selection -->
+                        <div id="adminCustomerSelectGroup" class="hidden bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                            <label class="block text-xs font-semibold text-amber-900 mb-1">Create on Behalf of Customer (Admin Mode):</label>
+                            <select id="orderCustomerSelect" class="w-full p-2 text-sm border border-amber-300 rounded-lg bg-white">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Pickup & Drop Locations -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="block text-xs font-semibold uppercase text-slate-600">Pickup Details</label>
+                                <input type="text" id="pickupAddress" required placeholder="Street address, landmark..." class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="debounceCalculateRate()">
+                                <input type="text" id="pickupPincode" required placeholder="Pickup Pincode (e.g. 110001)" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="debounceCalculateRate()">
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="block text-xs font-semibold uppercase text-slate-600">Dropoff Details</label>
+                                <input type="text" id="dropAddress" required placeholder="Recipient address, house no..." class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="debounceCalculateRate()">
+                                <input type="text" id="dropPincode" required placeholder="Dropoff Pincode (e.g. 110016)" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="debounceCalculateRate()">
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-100">
+
+                        <!-- Dimensions & Weight -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-2">Package Weight & Dimensions (L × W × H in cm)</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div>
+                                    <span class="text-xs text-slate-500">Length (cm)</span>
+                                    <input type="number" id="lengthCm" step="0.1" min="1" value="30" required class="w-full p-2.5 text-sm border border-slate-300 rounded-lg" oninput="debounceCalculateRate()">
+                                </div>
+                                <div>
+                                    <span class="text-xs text-slate-500">Width (cm)</span>
+                                    <input type="number" id="widthCm" step="0.1" min="1" value="20" required class="w-full p-2.5 text-sm border border-slate-300 rounded-lg" oninput="debounceCalculateRate()">
+                                </div>
+                                <div>
+                                    <span class="text-xs text-slate-500">Height (cm)</span>
+                                    <input type="number" id="heightCm" step="0.1" min="1" value="15" required class="w-full p-2.5 text-sm border border-slate-300 rounded-lg" oninput="debounceCalculateRate()">
+                                </div>
+                                <div>
+                                    <span class="text-xs text-slate-500">Actual Wt (kg)</span>
+                                    <input type="number" id="actualWeightKg" step="0.1" min="0.1" value="1.5" required class="w-full p-2.5 text-sm border border-slate-300 rounded-lg" oninput="debounceCalculateRate()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Type & Payment Type -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Order Category</label>
+                                <select id="orderType" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg" onchange="debounceCalculateRate()">
+                                    <option value="B2C">B2C (Business to Consumer)</option>
+                                    <option value="B2B">B2B (Business to Business)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Payment Type</label>
+                                <select id="paymentType" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg" onchange="debounceCalculateRate()">
+                                    <option value="PREPAID">Prepaid</option>
+                                    <option value="COD">COD (Cash on Delivery)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i> Confirm & Place Delivery Order
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right Column: Auto-Calculated Charge Breakdown Card -->
+                <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6 rounded-xl shadow-lg flex flex-col justify-between border border-slate-700">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+                            <h3 class="font-bold text-base flex items-center gap-2">
+                                <i data-lucide="receipt" class="w-5 h-5 text-emerald-400"></i> Rate Engine Breakdown
+                            </h3>
+                            <span id="routeBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">INTRA-ZONE</span>
+                        </div>
+
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Volumetric Weight:</span>
+                                <span id="volWeightVal" class="font-mono font-bold text-slate-100">1.80 kg</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Actual Weight:</span>
+                                <span id="actWeightVal" class="font-mono font-bold text-slate-100">1.50 kg</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-slate-800/80 p-2.5 rounded-lg border border-slate-700 text-emerald-300 font-semibold">
+                                <span>Billable Weight (Higher):</span>
+                                <span id="billWeightVal" class="font-mono text-base font-extrabold text-emerald-400">1.80 kg</span>
+                            </div>
+
+                            <hr class="border-slate-700 my-2">
+
+                            <div class="flex justify-between items-center text-slate-300 text-xs">
+                                <span>Pickup Zone:</span>
+                                <span id="pickupZoneVal" class="font-semibold text-slate-200">North Zone</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300 text-xs">
+                                <span>Drop Zone:</span>
+                                <span id="dropZoneVal" class="font-semibold text-slate-200">North Zone</span>
+                            </div>
+
+                            <hr class="border-slate-700 my-2">
+
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Base Freight Rate:</span>
+                                <span id="baseChargeVal" class="font-mono">₹40.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Weight Charge:</span>
+                                <span id="weightChargeVal" class="font-mono">₹27.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>COD Surcharge:</span>
+                                <span id="codChargeVal" class="font-mono text-amber-400">₹0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-700">
+                        <div class="flex justify-between items-baseline mb-1">
+                            <span class="text-xs font-semibold uppercase text-slate-400">Total Delivery Charge</span>
+                            <span id="totalChargeVal" class="text-3xl font-extrabold text-emerald-400 font-mono">₹67.00</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 text-right">Includes all taxes, dynamic zone rates & surcharges.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================= TAB 3: DELIVERY AGENTS HUB ================= -->
+        <section id="content-agents" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="bike" class="w-5 h-5 text-emerald-600"></i> Active Delivery Agent Roster
+                        </h2>
+                        <p class="text-xs text-slate-500">Real-time availability, location status, and active workload capacity.</p>
+                    </div>
+                    <div id="agentSelfControls" class="hidden bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex items-center gap-3">
+                        <span class="text-xs font-bold text-slate-700">My Status:</span>
+                        <select id="agentMyStatus" onchange="updateMyAgentStatus()" class="px-2.5 py-1 text-xs border border-slate-300 rounded-lg font-bold">
+                            <option value="AVAILABLE">AVAILABLE</option>
+                            <option value="ON_DELIVERY">ON_DELIVERY</option>
+                            <option value="OFFLINE">OFFLINE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="agentsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <p class="text-slate-400 text-sm col-span-3">Loading agent roster...</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= TAB 4: ADMIN CONFIGURATION & LOGS ================= -->
+        <section id="content-admin" class="tab-content hidden">
+            <div class="space-y-6">
+                
+                <!-- Sub-tabs nav -->
+                <div class="flex space-x-2 border-b border-slate-200 pb-2">
+                    <button onclick="switchAdminSubTab('zones')" id="subtab-zones" class="admin-subtab px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white">Zone & Area Manager</button>
+                    <button onclick="switchAdminSubTab('rates')" id="subtab-rates" class="admin-subtab px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Rate Cards Config</button>
+                    <button onclick="switchAdminSubTab('cod')" id="subtab-cod" class="admin-subtab px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">COD Surcharges</button>
+                    <button onclick="switchAdminSubTab('logs')" id="subtab-logs" class="admin-subtab px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Notification Logs</button>
+                </div>
+
+                <!-- Admin Subtab 1: Zones Manager -->
+                <div id="admin-subcontent-zones" class="admin-subcontent space-y-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-base mb-4 text-slate-900">Create New Zone</h3>
+                        <form onsubmit="handleCreateZone(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <input type="text" id="newZoneName" required placeholder="Zone Name (e.g. North Zone)" class="p-2 text-sm border rounded-lg">
+                            <input type="text" id="newZoneCode" required placeholder="Zone Code (e.g. NORTH-01)" class="p-2 text-sm border rounded-lg uppercase">
+                            <button type="submit" class="bg-blue-600 text-white font-bold text-sm py-2 rounded-lg hover:bg-blue-700 transition">Add Zone</button>
+                        </form>
+                    </div>
+
+                    <div id="zonesListContainer" class="space-y-4">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Admin Subtab 2: Rate Cards Config -->
+                <div id="admin-subcontent-rates" class="admin-subcontent hidden bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-base mb-2 text-slate-900">Configure Rate Cards</h3>
+                    <p class="text-xs text-slate-500 mb-6">Modify base rate, per kg charge, and minimum charge floor for B2B and B2C intra/inter zone routes.</p>
+                    <div id="rateCardsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Admin Subtab 3: COD Surcharges -->
+                <div id="admin-subcontent-cod" class="admin-subcontent hidden bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-base mb-2 text-slate-900">Configure COD Surcharges</h3>
+                    <p class="text-xs text-slate-500 mb-6">Configure fixed collection fee and percentage surcharge for Cash-on-Delivery orders.</p>
+                    <div id="codContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Admin Subtab 4: Notification Logs -->
+                <div id="admin-subcontent-logs" class="admin-subcontent hidden bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-base mb-4 text-slate-900">Dispatched Notification Audit Log</h3>
+                    <div class="overflow-x-auto max-h-[500px]">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-100 text-slate-600 font-bold border-b sticky top-0">
+                                <tr>
+                                    <th class="p-2.5">Time</th>
+                                    <th class="p-2.5">Channel</th>
+                                    <th class="p-2.5">Recipient</th>
+                                    <th class="p-2.5">Subject</th>
+                                    <th class="p-2.5">Message Snippet</th>
+                                    <th class="p-2.5">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="notificationLogsBody" class="divide-y">
+                                <!-- Loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Modal 1: Live Order Timeline & History -->
+    <div id="timelineModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-900" id="modalTrackingTitle">Order Timeline</h3>
+                    <p class="text-xs text-slate-500" id="modalTrackingSub">Full tracking journey & immutable event history</p>
+                </div>
+                <button onclick="closeModal('timelineModal')" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 space-y-6 pr-1">
+                <!-- Visual Step-by-Step Progress Bar -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="text-xs font-bold uppercase text-slate-500 mb-3">Delivery Progress</h4>
+                    <div id="progressStepBar" class="flex justify-between items-center relative">
+                        <!-- Rendered in JS -->
+                    </div>
+                </div>
+
+                <!-- Reschedule Alert if Failed -->
+                <div id="rescheduleAlertBox" class="hidden bg-rose-50 border border-rose-200 p-4 rounded-xl text-rose-900">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h5 class="font-bold text-sm">⚠️ Delivery Attempt Failed</h5>
+                            <p class="text-xs text-rose-700 mt-0.5" id="modalFailureReason">Customer uncontactable.</p>
+                        </div>
+                        <button id="rescheduleBtnModal" class="px-3 py-1.5 text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg shadow transition">
+                            Reschedule Delivery
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Immutable Tracking Log Table -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-slate-500 mb-2">Immutable Tracking History</h4>
+                    <div class="border rounded-xl overflow-hidden text-xs">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-100 text-slate-600 font-bold border-b">
+                                <tr>
+                                    <th class="p-2.5">Timestamp</th>
+                                    <th class="p-2.5">Status</th>
+                                    <th class="p-2.5">Actor</th>
+                                    <th class="p-2.5">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalHistoryBody" class="divide-y">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Reschedule Order Form -->
+    <div id="rescheduleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-base text-slate-900">Reschedule Delivery Attempt</h3>
+                <button onclick="closeModal('rescheduleModal')" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="handleConfirmReschedule(event)" class="space-y-4">
+                <input type="hidden" id="rescheduleOrderId">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Select New Delivery Date & Time Slot</label>
+                    <input type="date" id="rescheduleDate" required class="w-full p-2.5 text-sm border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Special Instructions for Reassigned Agent</label>
+                    <textarea id="rescheduleNotes" rows="2" placeholder="e.g. Please deliver after 3 PM or leave with security" class="w-full p-2.5 text-sm border rounded-lg"></textarea>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition">
+                    Confirm Reschedule & Auto-Reassign Agent
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Update Order Status (Agent / Admin) -->
+    <div id="statusModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-base text-slate-900">Update Delivery Order Status</h3>
+                <button onclick="closeModal('statusModal')" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="handleConfirmStatusUpdate(event)" class="space-y-4">
+                <input type="hidden" id="updateStatusOrderId">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">New Status</label>
+                    <select id="updateStatusSelect" onchange="toggleFailureReasonInput()" class="w-full p-2.5 text-sm border rounded-lg font-bold">
+                        <option value="PICKED_UP">PICKED_UP (Picked up from merchant)</option>
+                        <option value="IN_TRANSIT">IN_TRANSIT (In Transit to Delivery Hub)</option>
+                        <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY (Agent on the way)</option>
+                        <option value="DELIVERED">DELIVERED (Handed over successfully)</option>
+                        <option value="FAILED">FAILED (Delivery Attempt Failed)</option>
+                    </select>
+                </div>
+                <div id="failureReasonGroup" class="hidden">
+                    <label class="block text-xs font-bold uppercase text-rose-600 mb-1">Failure Reason (Mandatory)</label>
+                    <input type="text" id="updateFailureReason" placeholder="e.g. Customer refused package / Address not found" class="w-full p-2.5 text-sm border border-rose-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Update Notes</label>
+                    <input type="text" id="updateStatusNotes" placeholder="Optional notes or landmark..." class="w-full p-2.5 text-sm border rounded-lg">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition">
+                    Save Status Update
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Admin Manual Agent Assignment -->
+    <div id="assignAgentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-base text-slate-900">Assign Delivery Agent</h3>
+                <button onclick="closeModal('assignAgentModal')" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="handleConfirmAssignAgent(event)" class="space-y-4">
+                <input type="hidden" id="assignOrderId">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Select Available Agent</label>
+                    <select id="agentSelectModal" class="w-full p-2.5 text-sm border rounded-lg">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="triggerAutoAssignModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition">
+                        ⚡ Trigger Auto-Assign
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition">
+                        Assign Selected
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 5: Admin Override Status Modal -->
+    <div id="overrideModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-base text-amber-600 flex items-center gap-1">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i> Admin Status Override
+                </h3>
+                <button onclick="closeModal('overrideModal')" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="handleConfirmOverride(event)" class="space-y-4">
+                <input type="hidden" id="overrideOrderId">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Override Target Status</label>
+                    <select id="overrideStatusSelect" class="w-full p-2.5 text-sm border rounded-lg font-bold">
+                        <option value="CREATED">CREATED</option>
+                        <option value="ASSIGNED">ASSIGNED</option>
+                        <option value="PICKED_UP">PICKED_UP</option>
+                        <option value="IN_TRANSIT">IN_TRANSIT</option>
+                        <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+                        <option value="DELIVERED">DELIVERED</option>
+                        <option value="FAILED">FAILED</option>
+                        <option value="RESCHEDULED">RESCHEDULED</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Admin Audit Reason</label>
+                    <input type="text" id="overrideNotes" required placeholder="Reason for manual status override..." class="w-full p-2.5 text-sm border rounded-lg">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-sm transition">
+                    Apply Override
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="/static/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
